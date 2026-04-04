@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS guru (
     nama VARCHAR(100) NOT NULL,
     nip VARCHAR(30) NOT NULL UNIQUE,
     sk VARCHAR(50) DEFAULT NULL,
-    stmp VARCHAR(50) DEFAULT NULL,
+    spmt VARCHAR(100) DEFAULT NULL,
     password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
@@ -60,6 +60,9 @@ CREATE TABLE IF NOT EXISTS absensi (
 -- ALTER TABLE absensi ADD COLUMN klarifikasi_at TIMESTAMP NULL DEFAULT NULL AFTER klarifikasi_status;
 -- ALTER TABLE absensi ADD COLUMN klarifikasi_catatan_admin TEXT DEFAULT NULL AFTER klarifikasi_at;
 
+-- Rename kolom stmp -> spmt + perluas panjang (jalankan jika database sudah ada):
+-- ALTER TABLE guru CHANGE COLUMN stmp spmt VARCHAR(100) DEFAULT NULL;
+
 -- ALTER TABLE absensi ADD COLUMN status ENUM('hadir','izin','sakit') NOT NULL DEFAULT 'hadir' AFTER tanggal;
 -- ALTER TABLE absensi ADD COLUMN keterangan TEXT DEFAULT NULL AFTER keterangan_pulang;
 -- ALTER TABLE absensi ADD COLUMN bukti_file VARCHAR(255) DEFAULT NULL AFTER keterangan;
@@ -71,6 +74,32 @@ CREATE TABLE IF NOT EXISTS absensi (
 -- ALTER TABLE absensi ADD COLUMN foto_pulang VARCHAR(255) DEFAULT NULL AFTER keterangan_pulang;
 -- ALTER TABLE absensi ADD COLUMN lat_pulang DECIMAL(10,7) DEFAULT NULL AFTER foto_pulang;
 -- ALTER TABLE absensi ADD COLUMN lng_pulang DECIMAL(10,7) DEFAULT NULL AFTER lat_pulang;
+
+-- ============================================
+-- TABEL: izin_absen
+-- Menyimpan izin khusus dari admin agar guru
+-- tetap bisa absen meski sudah melewati JAM_ALPHA
+-- ============================================
+CREATE TABLE IF NOT EXISTS izin_absen (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    guru_id    INT NOT NULL,
+    tanggal    DATE NOT NULL,
+    dibuat_oleh INT NOT NULL COMMENT 'admin.id',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (guru_id) REFERENCES guru(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_izin (guru_id, tanggal)
+) ENGINE=InnoDB;
+
+-- Jika database SUDAH ADA, jalankan ini di phpMyAdmin:
+-- CREATE TABLE IF NOT EXISTS izin_absen (
+--     id         INT AUTO_INCREMENT PRIMARY KEY,
+--     guru_id    INT NOT NULL,
+--     tanggal    DATE NOT NULL,
+--     dibuat_oleh INT NOT NULL,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     FOREIGN KEY (guru_id) REFERENCES guru(id) ON DELETE CASCADE,
+--     UNIQUE KEY unique_izin (guru_id, tanggal)
+-- ) ENGINE=InnoDB;
 
 -- ============================================
 -- TABEL: admin
@@ -94,7 +123,7 @@ INSERT INTO admin (username, password, nama) VALUES
 -- DATA CONTOH: Guru
 -- Password semua: guru123
 -- ============================================
-INSERT INTO guru (nama, nip, sk, stmp, password) VALUES
-('Budi Santoso, S.Pd', '198501012010011001', 'SK/2010/001', 'S1 Pendidikan', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-('Siti Aminah, S.Pd', '198703152012012002', 'SK/2012/002', 'S1 Matematika', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-('Ahmad Fauzi, M.Pd', '199001202015011003', 'SK/2015/003', 'S2 IPA', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
+INSERT INTO guru (nama, nip, sk, spmt, password) VALUES
+('Budi Santoso, S.Pd', '198501012010011001', '620 Tahun 2025', '800.1.13.2/20810-Dindikbud/2025', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
+('Siti Aminah, S.Pd', '198703152012012002', '620 Tahun 2025', '800.1.13.2/20811-Dindikbud/2025', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
+('Ahmad Fauzi, M.Pd', '199001202015011003', '620 Tahun 2025', '800.1.13.2/20812-Dindikbud/2025', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');

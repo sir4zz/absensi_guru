@@ -42,8 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['guru_id']      = $guru['id'];
                     $_SESSION['guru_nama']    = $guru['nama'];
                     $_SESSION['last_activity'] = time();
-                    $_SESSION['created_at']   = time();
-                    $_SESSION['fingerprint']  = md5(($_SERVER['HTTP_USER_AGENT'] ?? '') . ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''));
                     $stmt->close();
                     redirect('guru/dashboard.php');
                 } else {
@@ -71,8 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['admin_id']      = $admin['id'];
                     $_SESSION['admin_nama']    = $admin['nama'];
                     $_SESSION['last_activity'] = time();
-                    $_SESSION['created_at']   = time();
-                    $_SESSION['fingerprint']  = md5(($_SERVER['HTTP_USER_AGENT'] ?? '') . ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''));
                     $stmt->close();
                     redirect('admin/dashboard.php');
                 } else {

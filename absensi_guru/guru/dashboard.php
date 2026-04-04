@@ -56,6 +56,10 @@ $total_alpha   = $conn->query("SELECT COUNT(*) as t FROM absensi WHERE guru_id=$
                 <a href="absensi.php" class="nav-item"><i class="fas fa-fingerprint nav-icon"></i> Absensi</a>
                 <a href="riwayat.php" class="nav-item"><i class="fas fa-history nav-icon"></i> Riwayat Absensi</a>
             </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Akun</div>
+                <a href="ganti_password.php" class="nav-item"><i class="fas fa-key nav-icon"></i> Ganti Password</a>
+            </div>
         </nav>
         <div class="sidebar-footer">
             <a href="../logout.php" class="nav-item" onclick="return confirm('Yakin ingin keluar?')">

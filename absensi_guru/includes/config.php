@@ -14,38 +14,21 @@ ini_set('session.use_strict_mode', 1);       // Tolak session ID yang tidak dibu
 ini_set('session.use_only_cookies', 1);      // Session hanya lewat cookie, bukan URL
 ini_set('session.use_trans_sid', 0);         // Larang session ID di URL
 ini_set('session.cookie_httponly', 1);       // Cookie tidak bisa diakses JavaScript
-ini_set('session.cookie_samesite', 'Strict'); // Cegah CSRF lintas situs
+ini_set('session.cookie_samesite', 'Lax');   // Lax agar tidak logout saat pindah tab
+ini_set('session.gc_maxlifetime', 7200);     // Session hidup max 2 jam di server
 
-define('SESSION_TIMEOUT', 3600); // Timeout 60 menit tidak aktif
+define('SESSION_TIMEOUT', 7200); // Timeout 2 jam tidak aktif
 
 session_start();
 
-// --- Validasi fingerprint browser (cegah session hijacking) ---
-// Gunakan kurung eksplisit agar operator precedence benar
-$fingerprint = md5(
-    ($_SERVER['HTTP_USER_AGENT']      ?? '') .
-    ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '')
-);
-if (isset($_SESSION['fingerprint']) && $_SESSION['fingerprint'] !== $fingerprint) {
-    // Fingerprint tidak cocok → session tidak valid, paksa logout
-    session_unset();
-    session_destroy();
-    session_start();
-    // Set fingerprint baru untuk session kosong ini
-    $_SESSION['fingerprint'] = $fingerprint;
-}
-if (!isset($_SESSION['fingerprint'])) {
-    $_SESSION['fingerprint'] = $fingerprint;
-}
-
 // --- Cek timeout tidak aktif ---
+// Fingerprint dihapus: user-agent bisa berubah antar request dan menyebabkan logout tidak terduga
 if (isset($_SESSION['last_activity']) && (isset($_SESSION['guru_id']) || isset($_SESSION['admin_id']))) {
     if (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT) {
         session_unset();
         session_destroy();
         session_start();
-        $_SESSION['timeout']     = true;
-        $_SESSION['fingerprint'] = $fingerprint;
+        $_SESSION['timeout'] = true;
     }
 }
 
@@ -54,15 +37,9 @@ if (isset($_SESSION['guru_id']) || isset($_SESSION['admin_id'])) {
     $_SESSION['last_activity'] = time();
 }
 
-// --- Regenerasi session ID secara berkala (setiap 10 menit) ---
-if (isset($_SESSION['guru_id']) || isset($_SESSION['admin_id'])) {
-    if (!isset($_SESSION['created_at'])) {
-        $_SESSION['created_at'] = time();
-    } elseif (time() - $_SESSION['created_at'] > 600) {
-        session_regenerate_id(true);
-        $_SESSION['created_at'] = time();
-    }
-}
+// --- Catatan keamanan ---
+// session_regenerate_id() berkala dihapus karena menyebabkan tab lain logout:
+// saat tab pertama regenerate session ID, tab lain yang masih pakai ID lama akan invalid.
 
 // ============================================
 // KONFIGURASI LOKASI SEKOLAH & ABSENSI

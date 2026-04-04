@@ -71,6 +71,10 @@ $sudah_izin      = ($status_hari_ini === 'izin');
 $sudah_sakit     = ($status_hari_ini === 'sakit');
 $sudah_alpha     = ($status_hari_ini === 'alpha');
 
+// Cek apakah guru punya izin absen khusus dari admin (hanya untuk hari ini)
+$cekIzin    = $conn->query("SELECT id FROM izin_absen WHERE guru_id = $guru_id AND tanggal = '$today'");
+$punya_izin = ($cekIzin->num_rows > 0);
+
 // Jika akses tanggal lampau tapi bukan alpha, redirect ke today
 if ($is_past && !$sudah_alpha) {
     redirect('absensi.php');
@@ -110,6 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $icon = ($ket === 'Terlambat') ? '⚠️' : '✅';
             $message = "$icon Absen masuk dicatat pukul " . formatTime($jam) . " — $ket.";
             $messageType = ($ket === 'Terlambat') ? 'warning' : 'success';
+            // Cabut izin khusus setelah guru berhasil absen masuk
+            $conn->query("DELETE FROM izin_absen WHERE guru_id=$guru_id AND tanggal='$today'");
         }
 
     } elseif ($action === 'pulang') {
@@ -230,6 +236,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $activeForm = $_GET['form'] ?? '';
+
+// Jika guru punya izin khusus dari admin:
+// (a) statusnya alpha  → reset alpha, tampilkan form absen + banner
+// (b) belum ada record → tampilkan banner saja (form absen sudah tampil normal)
+$tampil_banner_izin = false;
+if ($punya_izin && !$is_past && !$sudah_masuk) {
+    if ($sudah_alpha) {
+        $sudah_alpha = false; // paksa tampil form absen normal
+    }
+    $tampil_banner_izin = true;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -348,6 +365,10 @@ $activeForm = $_GET['form'] ?? '';
                 <a href="absensi.php" class="nav-item active"><i class="fas fa-fingerprint nav-icon"></i> Absensi</a>
                 <a href="riwayat.php" class="nav-item"><i class="fas fa-history nav-icon"></i> Riwayat Absensi</a>
             </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Akun</div>
+                <a href="ganti_password.php" class="nav-item"><i class="fas fa-key nav-icon"></i> Ganti Password</a>
+            </div>
         </nav>
         <div class="sidebar-footer">
             <a href="../logout.php" class="nav-item" onclick="return confirm('Yakin ingin keluar?')">
@@ -411,7 +432,6 @@ $activeForm = $_GET['form'] ?? '';
         </div>
 
         <?php elseif ($sudah_alpha): ?>
-        <!-- ===================== TAMPILAN ALPHA ===================== -->
         <?php
             $tgl_alpha        = new DateTime($absensi['tanggal']);
             $tgl_batas        = (clone $tgl_alpha)->modify('+' . BATAS_KLARIFIKASI_HARI . ' days');
@@ -534,6 +554,15 @@ $activeForm = $_GET['form'] ?? '';
                 <span class="badge badge-primary"><?= formatDate($today) ?></span>
             </div>
             <div class="card-body">
+                <?php if ($tampil_banner_izin): ?>
+                <div class="alert alert-success" style="margin-bottom:20px;">
+                    <i class="fas fa-unlock"></i>
+                    <div>
+                        <strong>Izin absen khusus aktif</strong><br>
+                        <span style="font-size:0.85rem;">Admin telah mengizinkan Anda untuk melakukan absensi hari ini meskipun sudah melewati batas waktu. Silakan lakukan absen masuk.</span>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <div class="grid-4">
 
                     <!-- Absen Masuk -->

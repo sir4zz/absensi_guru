@@ -96,8 +96,8 @@ http://localhost/absensi-guru/
 | id         | INT (PK, AI) | ID unik guru           |
 | nama       | VARCHAR(100) | Nama lengkap           |
 | nip        | VARCHAR(30)  | NIP (unik)             |
-| sk         | VARCHAR(50)  | Nomor SK               |
-| stmp       | VARCHAR(50)  | STMP / Pendidikan      |
+| sk         | VARCHAR(50)  | Nomor SK (cth: 620 Tahun 2025)                    |
+| spmt       | VARCHAR(100) | Nomor SPMT (cth: 800.1.13.2/20810-Dindikbud/2025) |
 | password   | VARCHAR(255) | Password (di-hash)     |
 | created_at | TIMESTAMP    | Waktu dibuat           |
 
