@@ -8,6 +8,12 @@ $filter_tanggal = sanitize($conn, $_GET['tanggal'] ?? '');
 $filter_guru    = (int)($_GET['guru_id'] ?? 0);
 $filter_bulan   = sanitize($conn, $_GET['bulan'] ?? date('Y-m'));
 $filter_status  = sanitize($conn, $_GET['status'] ?? '');
+// Untuk preview nama file export
+$nmBulan  = ['','Januari','Februari','Maret','April','Mei','Juni',
+             'Juli','Agustus','September','Oktober','November','Desember'];
+$_bParts  = explode('-', $filter_bulan);
+$tahunInt = (int)($_bParts[0] ?? date('Y'));
+$bulanInt = (int)($_bParts[1] ?? date('n'));
 
 $pending_klarifikasi = $conn->query("SELECT COUNT(*) as t FROM absensi WHERE klarifikasi_status='pending'")->fetch_assoc()['t'];
 
@@ -75,6 +81,24 @@ while ($row = $data->fetch_assoc()) {
 </head>
 <body>
 <div class="app-layout">
+    <!-- ===== MOBILE HEADER ===== -->
+    <div class="mobile-header">
+        <button class="hamburger-btn" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="mh-brand">
+            <div class="mh-icon">✅</div>
+            <span>Data Absensi Guru</span>
+        </div>
+        <div class="mh-actions">
+            <a href="../logout.php" class="mh-logout-btn" onclick="return confirm('Yakin ingin keluar?')" title="Keluar">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </div>
+    </div>
+    <div class="sidebar-overlay"></div>
+    <!-- ===== END MOBILE HEADER ===== -->
+
     <aside class="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-brand">
@@ -165,73 +189,92 @@ while ($row = $data->fetch_assoc()) {
             </div>
         </div>
 
-        <!-- Export Excel -->
-        <div class="card" style="margin-bottom:0;">
-            <div class="card-header">
-                <div class="card-title"><i class="fas fa-file-excel" style="color:#16a34a;"></i> Export ke Excel</div>
+        <!-- Export Excel Multi-Sheet -->
+        <div class="card" style="margin-bottom:0; border:2px solid #16a34a22;">
+            <div class="card-header" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7); border-bottom:1px solid #bbf7d0;">
+                <div class="card-title" style="color:#15803d;">
+                    <i class="fas fa-file-excel" style="color:#16a34a;font-size:1.1rem;"></i>
+                    Export Laporan Absensi ke Excel
+                </div>
+                <span style="font-size:0.78rem;color:#166534;background:#bbf7d0;padding:3px 10px;border-radius:99px;font-weight:600;">
+                    5 Sheet • Format .xlsx
+                </span>
             </div>
             <div class="card-body">
-                <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;">
 
-                    <!-- Export Mingguan -->
-                    <form method="GET" action="export_excel.php" target="_blank" style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;">
-                        <input type="hidden" name="tipe" value="mingguan">
-                        <input type="hidden" name="guru_id" value="<?= $filter_guru ?>">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.8rem;margin-bottom:3px;color:var(--gray-600);">Pilih Minggu</label>
-                            <input type="week" name="minggu" class="form-control"
-                                   value="<?= date('Y-\WW') ?>"
-                                   style="padding:6px 10px;font-size:0.875rem;">
+                <!-- Sheet preview badges -->
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">
+                    <?php
+                    $sheets = [
+                        ['🗓️','REKAP BULANAN','Kalender absensi semua guru','#1e40af','#dbeafe'],
+                        ['📋','DETAIL HARIAN','Jam masuk & pulang lengkap','#065f46','#d1fae5'],
+                        ['📍','LOKASI & SELFIE','GPS koordinat & foto selfie','#7c3aed','#ede9fe'],
+                        ['📁','IZIN & KLARIFIKASI','Bukti izin & review admin','#92400e','#fef3c7'],
+                        ['👩‍🏫','DATA GURU','Daftar guru & nomor SK/SPMT','#1f2937','#f1f5f9'],
+                    ];
+                    foreach ($sheets as [$icon,$nama,$desc,$fg,$bg]):
+                    ?>
+                    <div style="display:flex;align-items:center;gap:6px;background:<?= $bg ?>;border:1px solid <?= $fg ?>33;border-radius:8px;padding:5px 11px;">
+                        <span style="font-size:1rem;"><?= $icon ?></span>
+                        <div>
+                            <div style="font-weight:700;font-size:0.75rem;color:<?= $fg ?>;"><?= $nama ?></div>
+                            <div style="font-size:0.68rem;color:<?= $fg ?>99;"><?= $desc ?></div>
                         </div>
-                        <button type="submit" class="btn" style="background:#16a34a;color:white;gap:6px;white-space:nowrap;">
-                            <i class="fas fa-file-excel"></i> Export Mingguan
-                        </button>
-                    </form>
-
-                    <div style="width:1px;background:var(--gray-200);height:36px;align-self:flex-end;"></div>
-
-                    <!-- Export Bulanan -->
-                    <form method="GET" action="export_excel.php" target="_blank" style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;">
-                        <input type="hidden" name="tipe" value="bulanan">
-                        <input type="hidden" name="guru_id" value="<?= $filter_guru ?>">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.8rem;margin-bottom:3px;color:var(--gray-600);">Pilih Bulan</label>
-                            <input type="month" name="bulan" class="form-control"
-                                   value="<?= htmlspecialchars($filter_bulan) ?>"
-                                   style="padding:6px 10px;font-size:0.875rem;">
-                        </div>
-                        <button type="submit" class="btn" style="background:#1d4ed8;color:white;gap:6px;white-space:nowrap;">
-                            <i class="fas fa-file-excel"></i> Export Bulanan
-                        </button>
-                    </form>
-
-                    <div style="width:1px;background:var(--gray-200);height:36px;align-self:flex-end;"></div>
-
-                    <!-- Export Tahunan -->
-                    <form method="GET" action="export_excel.php" target="_blank" style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;">
-                        <input type="hidden" name="tipe" value="tahunan">
-                        <input type="hidden" name="guru_id" value="<?= $filter_guru ?>">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.8rem;margin-bottom:3px;color:var(--gray-600);">Pilih Tahun</label>
-                            <select name="tahun" class="form-control" style="padding:6px 10px;font-size:0.875rem;">
-                                <?php for ($y = date('Y'); $y >= date('Y')-5; $y--): ?>
-                                <option value="<?= $y ?>" <?= $y==date('Y')?'selected':'' ?>><?= $y ?></option>
-                                <?php endfor; ?>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn" style="background:#7c3aed;color:white;gap:6px;white-space:nowrap;">
-                            <i class="fas fa-file-excel"></i> Export Tahunan
-                        </button>
-                    </form>
-
+                    </div>
+                    <?php endforeach; ?>
                 </div>
-                <p style="margin-top:10px;margin-bottom:0;font-size:0.8rem;color:var(--gray-500);">
-                    <i class="fas fa-info-circle"></i>
-                    Filter <strong>Guru</strong> di atas akan ikut diterapkan saat export.
-                    Export akan membuka tab baru dan otomatis mengunduh file Excel (.xls).
+
+                <!-- Export Form -->
+                <form method="GET" action="export_excel.php" target="_blank"
+                      style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
+
+                    <div class="form-group" style="margin-bottom:0;min-width:160px;">
+                        <label style="font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:4px;display:block;">
+                            <i class="fas fa-calendar-alt" style="color:#16a34a;"></i> Pilih Bulan &amp; Tahun
+                        </label>
+                        <input type="month" name="bulan"
+                               value="<?= htmlspecialchars($filter_bulan) ?>"
+                               class="form-control"
+                               style="padding:8px 12px;font-size:0.9rem;border:1.5px solid #16a34a55;border-radius:8px;min-width:170px;">
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                        <label style="font-size:0.8rem;font-weight:600;color:#374151;">
+                            <i class="fas fa-file-signature" style="color:#6b7280;"></i> Nama File
+                        </label>
+                        <div style="font-size:0.78rem;color:#6b7280;background:white;border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;font-family:monospace;">
+                            Absensi_Guru_<em id="preview-bulan"><?= $nmBulan[$bulanInt] ?></em>_<em id="preview-tahun"><?= $tahunInt ?></em>.xlsx
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn" style="background:linear-gradient(135deg,#16a34a,#15803d);color:white;padding:10px 20px;font-weight:700;gap:8px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 8px #16a34a44;font-size:0.9rem;">
+                        <i class="fas fa-download"></i> Download Excel (.xlsx)
+                    </button>
+                </form>
+
+                <p style="margin-top:10px;margin-bottom:0;font-size:0.78rem;color:#6b7280;">
+                    <i class="fas fa-info-circle" style="color:#3b82f6;"></i>
+                    File Excel berisi <strong>5 sheet</strong> lengkap: rekap kalender, detail harian, lokasi GPS, data izin/klarifikasi, dan daftar guru.
+                    File akan langsung terunduh ke perangkat Anda.
                 </p>
             </div>
         </div>
+
+        <script>
+        (function(){
+            var nmBulan = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            var inp = document.querySelector('input[name="bulan"]');
+            if (!inp) return;
+            function updatePreview() {
+                var v = inp.value; // YYYY-MM
+                if (!v) return;
+                var parts = v.split('-');
+                document.getElementById('preview-bulan').textContent = nmBulan[parseInt(parts[1])] || parts[1];
+                document.getElementById('preview-tahun').textContent = parts[0];
+            }
+            inp.addEventListener('change', updatePreview);
+        })();
+        </script>
 
         <!-- Stats -->
         <div class="stats-grid">
@@ -470,5 +513,7 @@ function tutupBuktiLightbox() {
     document.getElementById('lightbox').classList.remove('active');
 }
 </script>
+
+<script src="../js/mobile.js"></script>
 </body>
 </html>

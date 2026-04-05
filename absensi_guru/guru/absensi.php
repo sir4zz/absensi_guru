@@ -344,6 +344,24 @@ if ($punya_izin && !$is_past && !$sudah_masuk) {
 </head>
 <body>
 <div class="app-layout">
+    <!-- ===== MOBILE HEADER ===== -->
+    <div class="mobile-header">
+        <button class="hamburger-btn" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="mh-brand">
+            <div class="mh-icon">✅</div>
+            <span>Absensi</span>
+        </div>
+        <div class="mh-actions">
+            <a href="../logout.php" class="mh-logout-btn" onclick="return confirm('Yakin ingin keluar?')" title="Keluar">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </div>
+    </div>
+    <div class="sidebar-overlay"></div>
+    <!-- ===== END MOBILE HEADER ===== -->
+
     <aside class="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-brand">
@@ -1026,5 +1044,7 @@ document.addEventListener('DOMContentLoaded', () => { const f=document.getElemen
 document.addEventListener('DOMContentLoaded', () => { const f=document.getElementById('form-sakit'); if(f){f.style.display='block';f.scrollIntoView({behavior:'smooth'});} });
 <?php endif; ?>
 </script>
+
+<script src="../js/mobile.js"></script>
 </body>
 </html>

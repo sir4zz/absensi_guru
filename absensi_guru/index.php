@@ -197,9 +197,6 @@ $activeTab = $_POST['type'] ?? 'guru';
         </div>
 
         <p class="text-center mt-3 fs-sm text-muted">
-            <i class="fas fa-info-circle"></i>
-            Demo: Admin: <strong>admin</strong> / <strong>password</strong> | 
-            Guru NIP: <strong>198501012010011001</strong> / <strong>password</strong>
         </p>
     </div>
 

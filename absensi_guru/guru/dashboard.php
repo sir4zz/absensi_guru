@@ -35,6 +35,24 @@ $total_alpha   = $conn->query("SELECT COUNT(*) as t FROM absensi WHERE guru_id=$
 </head>
 <body>
 <div class="app-layout">
+    <!-- ===== MOBILE HEADER ===== -->
+    <div class="mobile-header">
+        <button class="hamburger-btn" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="mh-brand">
+            <div class="mh-icon">📊</div>
+            <span>Selamat Datang! 👋</span>
+        </div>
+        <div class="mh-actions">
+            <a href="../logout.php" class="mh-logout-btn" onclick="return confirm('Yakin ingin keluar?')" title="Keluar">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </div>
+    </div>
+    <div class="sidebar-overlay"></div>
+    <!-- ===== END MOBILE HEADER ===== -->
+
     <aside class="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-brand">
@@ -335,5 +353,7 @@ $total_alpha   = $conn->query("SELECT COUNT(*) as t FROM absensi WHERE guru_id=$
         </div>
     </main>
 </div>
+
+<script src="../js/mobile.js"></script>
 </body>
 </html>
