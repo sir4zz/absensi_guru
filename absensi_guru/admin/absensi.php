@@ -77,6 +77,62 @@ while ($row = $data->fetch_assoc()) {
         .lightbox img { max-width: 90vw; max-height: 80vh; border-radius: 14px; box-shadow: 0 8px 40px rgba(0,0,0,.6); }
         .lightbox-meta { color: white; font-size: 0.9rem; text-align: center; }
         .lightbox-close { position: absolute; top: 18px; right: 22px; color: white; font-size: 1.8rem; cursor: pointer; line-height: 1; }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.5); z-index: 8000;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: white; border-radius: 16px;
+            padding: 28px 28px 24px; width: 100%; max-width: 440px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.25);
+            animation: modalIn .18s ease;
+        }
+        @keyframes modalIn {
+            from { transform: translateY(-18px); opacity: 0; }
+            to   { transform: translateY(0);     opacity: 1; }
+        }
+        .modal-title {
+            font-size: 1.05rem; font-weight: 700; color: var(--gray-800);
+            margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+        }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+        /* ===== NOTIFIKASI ===== */
+        .notif-bar {
+            padding: 12px 18px; border-radius: 10px; font-weight: 600;
+            font-size: 0.875rem; display: flex; align-items: center; gap: 10px;
+            margin-bottom: 16px; animation: notifIn .25s ease;
+        }
+        @keyframes notifIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .notif-success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+        .notif-error   { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+
+        /* ===== TOMBOL AKSI ===== */
+        .btn-aksi {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 11px; border-radius: 7px; font-size: 0.78rem;
+            font-weight: 600; border: none; cursor: pointer; white-space: nowrap;
+            text-decoration: none; transition: filter .15s, transform .1s;
+        }
+        .btn-aksi:hover { filter: brightness(.93); transform: translateY(-1px); }
+        .btn-aksi:active { transform: translateY(0); }
+        .btn-edit-status { background: #e0f2fe; color: #0369a1; }
+        .btn-upload-bukti { background: #f0fdf4; color: #15803d; }
+        .btn-hapus { background: #fff1f2; color: #be123c; }
+
+        /* Upload preview */
+        .file-preview {
+            display: none; margin-top: 10px;
+            font-size: 0.8rem; color: var(--gray-600);
+            background: var(--gray-100); border-radius: 7px; padding: 8px 12px;
+        }
     </style>
 </head>
 <body>
@@ -146,6 +202,17 @@ while ($row = $data->fetch_assoc()) {
                 <p>Rekap lengkap kehadiran semua guru</p>
             </div>
         </div>
+
+        <!-- Notifikasi -->
+        <?php if (!empty($_SESSION['notif'])): ?>
+        <?php $notif = $_SESSION['notif']; unset($_SESSION['notif']); ?>
+        <div class="notif-bar notif-<?= $notif['type'] === 'success' ? 'success' : 'error' ?>" id="notifBar">
+            <i class="fas fa-<?= $notif['type'] === 'success' ? 'check-circle' : 'exclamation-circle' ?>"></i>
+            <?= htmlspecialchars($notif['msg']) ?>
+            <button onclick="this.parentElement.remove()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:1rem;color:inherit;line-height:1;">✕</button>
+        </div>
+        <script>setTimeout(()=>{ var n=document.getElementById('notifBar'); if(n) n.remove(); }, 4000);</script>
+        <?php endif; ?>
 
         <!-- Filter -->
         <div class="card">
@@ -334,6 +401,7 @@ while ($row = $data->fetch_assoc()) {
                                 <th>Bukti Izin/Sakit</th>
                                 <th>Keterangan</th>
                                 <th>Klarifikasi</th>
+                                <th style="text-align:center;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -472,9 +540,38 @@ while ($row = $data->fetch_assoc()) {
                                         <span class="text-muted">—</span>
                                     <?php endif; ?>
                                 </td>
+                                <!-- ===== KOLOM AKSI ===== -->
+                                <td style="text-align:center; white-space:nowrap; min-width:160px;">
+                                    <div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap;">
+                                        <!-- Edit Status -->
+                                        <button class="btn-aksi btn-edit-status"
+                                            onclick="bukaModalEditStatus(
+                                                <?= $row['id'] ?>,
+                                                '<?= htmlspecialchars(addslashes($row['nama'])) ?>',
+                                                '<?= $row['status'] ?>',
+                                                '<?= htmlspecialchars(addslashes($row['keterangan'] ?? '')) ?>'
+                                            )">
+                                            <i class="fas fa-pen"></i> Edit Status
+                                        </button>
+                                        <!-- Upload Bukti -->
+                                        <button class="btn-aksi btn-upload-bukti"
+                                            onclick="bukaModalUploadBukti(
+                                                <?= $row['id'] ?>,
+                                                '<?= htmlspecialchars(addslashes($row['nama'])) ?>',
+                                                '<?= $row['status'] ?>'
+                                            )">
+                                            <i class="fas fa-upload"></i> Bukti
+                                        </button>
+                                        <!-- Hapus -->
+                                        <button class="btn-aksi btn-hapus"
+                                            onclick="konfirmasiHapus(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama'])) ?>')">
+                                            <i class="fas fa-trash"></i> Hapus
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         <?php endforeach; else: ?>
-                            <tr><td colspan="13" class="table-empty">
+                            <tr><td colspan="14" class="table-empty">
                                 <div class="empty-icon">📋</div>
                                 <div>Tidak ada data untuk filter yang dipilih</div>
                             </td></tr>
@@ -511,6 +608,173 @@ function bukaBuktiLightbox(src, nama) {
 }
 function tutupBuktiLightbox() {
     document.getElementById('lightbox').classList.remove('active');
+}
+</script>
+
+
+<!-- ================================================================
+     MODAL: EDIT STATUS
+================================================================ -->
+<div class="modal-overlay" id="modalEditStatus">
+    <div class="modal-box">
+        <div class="modal-title">
+            <i class="fas fa-pen" style="color:var(--primary);"></i>
+            Edit Status Absensi
+            <span id="modalEditNama" style="color:var(--gray-500);font-weight:500;font-size:0.9rem;"></span>
+        </div>
+        <form method="POST" action="proses_absensi.php">
+            <input type="hidden" name="aksi" value="edit_status">
+            <input type="hidden" name="id" id="editStatusId">
+
+            <div class="form-group">
+                <label style="font-size:0.85rem;font-weight:600;color:var(--gray-700);margin-bottom:6px;display:block;">
+                    Status Kehadiran
+                </label>
+                <select name="status" id="editStatusVal" class="form-control" required>
+                    <option value="hadir">✅ Hadir</option>
+                    <option value="izin">📄 Izin</option>
+                    <option value="sakit">🩺 Sakit</option>
+                    <option value="alpha">❌ Alpha</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-top:14px;">
+                <label style="font-size:0.85rem;font-weight:600;color:var(--gray-700);margin-bottom:6px;display:block;">
+                    Keterangan <span style="font-weight:400;color:var(--gray-400);">(opsional)</span>
+                </label>
+                <textarea name="keterangan" id="editKeterangan" class="form-control"
+                    rows="3" placeholder="Tambahkan catatan jika diperlukan..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" onclick="tutupModal('modalEditStatus')">Batal</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================================================================
+     MODAL: UPLOAD BUKTI
+================================================================ -->
+<div class="modal-overlay" id="modalUploadBukti">
+    <div class="modal-box">
+        <div class="modal-title">
+            <i class="fas fa-upload" style="color:#15803d;"></i>
+            Upload Bukti Izin / Sakit
+            <span id="modalBuktiNama" style="color:var(--gray-500);font-weight:500;font-size:0.9rem;"></span>
+        </div>
+
+        <div id="buktiStatusInfo" style="margin-bottom:14px;padding:10px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;font-size:0.82rem;color:#92400e;display:none;">
+            <i class="fas fa-info-circle"></i>
+            Status saat ini: <strong id="buktiStatusLabel"></strong>. Upload bukti dianjurkan untuk izin dan sakit.
+        </div>
+
+        <form method="POST" action="proses_absensi.php" enctype="multipart/form-data">
+            <input type="hidden" name="aksi" value="upload_bukti">
+            <input type="hidden" name="id" id="buktiId">
+
+            <div class="form-group">
+                <label style="font-size:0.85rem;font-weight:600;color:var(--gray-700);margin-bottom:6px;display:block;">
+                    Pilih File Bukti
+                </label>
+                <input type="file" name="bukti_file" id="buktiFileInput"
+                    class="form-control" accept=".jpg,.jpeg,.png,.pdf"
+                    onchange="previewFile(this)">
+                <div class="file-preview" id="filePreview">
+                    <i class="fas fa-file"></i> <span id="filePreviewName"></span>
+                    <span id="filePreviewSize" style="color:var(--gray-400);margin-left:6px;"></span>
+                </div>
+                <p style="margin-top:8px;margin-bottom:0;font-size:0.78rem;color:var(--gray-400);">
+                    Format: JPG, PNG, PDF &nbsp;|&nbsp; Maks. 2 MB
+                </p>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" onclick="tutupModal('modalUploadBukti')">Batal</button>
+                <button type="submit" class="btn" style="background:linear-gradient(135deg,#16a34a,#15803d);color:white;">
+                    <i class="fas fa-upload"></i> Upload
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Form tersembunyi untuk Hapus -->
+<form method="POST" action="proses_absensi.php" id="formHapus" style="display:none;">
+    <input type="hidden" name="aksi" value="hapus">
+    <input type="hidden" name="id" id="hapusId">
+</form>
+
+<script>
+// ── Modal helpers ──────────────────────────────────────────────
+function tutupModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+// Tutup modal klik di luar box
+document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) tutupModal(overlay.id);
+    });
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        tutupModal('modalEditStatus');
+        tutupModal('modalUploadBukti');
+    }
+});
+
+// ── Modal: Edit Status ─────────────────────────────────────────
+function bukaModalEditStatus(id, nama, status, keterangan) {
+    document.getElementById('editStatusId').value    = id;
+    document.getElementById('modalEditNama').textContent = '— ' + nama;
+    document.getElementById('editStatusVal').value   = status;
+    document.getElementById('editKeterangan').value  = keterangan;
+    document.getElementById('modalEditStatus').classList.add('active');
+}
+
+// ── Modal: Upload Bukti ────────────────────────────────────────
+function bukaModalUploadBukti(id, nama, status) {
+    document.getElementById('buktiId').value  = id;
+    document.getElementById('modalBuktiNama').textContent = '— ' + nama;
+    document.getElementById('buktiFileInput').value = '';
+    document.getElementById('filePreview').style.display = 'none';
+
+    var infoBox = document.getElementById('buktiStatusInfo');
+    if (status === 'izin' || status === 'sakit') {
+        infoBox.style.display = 'block';
+        document.getElementById('buktiStatusLabel').textContent =
+            status.charAt(0).toUpperCase() + status.slice(1);
+    } else {
+        infoBox.style.display = 'none';
+    }
+    document.getElementById('modalUploadBukti').classList.add('active');
+}
+
+// ── Preview file sebelum upload ────────────────────────────────
+function previewFile(input) {
+    var preview = document.getElementById('filePreview');
+    if (input.files && input.files[0]) {
+        var f    = input.files[0];
+        var size = f.size < 1024*1024
+            ? (f.size/1024).toFixed(1) + ' KB'
+            : (f.size/(1024*1024)).toFixed(2) + ' MB';
+        document.getElementById('filePreviewName').textContent = f.name;
+        document.getElementById('filePreviewSize').textContent = size;
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+// ── Konfirmasi Hapus ───────────────────────────────────────────
+function konfirmasiHapus(id, nama) {
+    if (confirm('Hapus data absensi milik:\n"' + nama + '"?\n\nTindakan ini tidak dapat dibatalkan.')) {
+        document.getElementById('hapusId').value = id;
+        document.getElementById('formHapus').submit();
+    }
 }
 </script>
 
